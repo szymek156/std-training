@@ -1,6 +1,9 @@
 use anyhow::Result;
 use core::str;
-use embedded_svc::{http::Method, io::Write};
+use embedded_svc::{
+    http::{Headers, Method},
+    io::Write,
+};
 use esp_idf_svc::{
     eventloop::EspSystemEventLoop,
     hal::{
@@ -9,6 +12,7 @@ use esp_idf_svc::{
     },
     http::server::{Configuration, EspHttpServer},
 };
+use serde::Serialize;
 use shtcx::{self, shtc3, PowerMode};
 use std::{
     sync::{Arc, Mutex},
@@ -16,6 +20,19 @@ use std::{
     time::Duration,
 };
 use wifi::wifi;
+
+#[derive(Serialize)]
+struct Section {
+    section: String,
+    duration: Duration,
+    enabled: bool,
+    moisture: f32,
+}
+
+#[derive(Serialize)]
+struct Response {
+    sections: Vec<Section>,
+}
 
 #[toml_cfg::toml_config]
 pub struct Config {
@@ -61,10 +78,21 @@ fn main() -> Result<()> {
     let mut server = EspHttpServer::new(&Configuration::default())?;
     // http://<sta ip>/ handler
     server.fn_handler("/", Method::Get, |request| {
-        let html = index_html();
-        let mut response = request.into_ok_response()?;
-        response.write_all(html.as_bytes())
+        let mut response =
+            request.into_response(200, Some("OK"), &[("Content-Type", "application/json")])?;
 
+        let sections = Response {
+            sections: vec![Section {
+                section: "grass".to_string(),
+                duration: Duration::from_secs(300),
+                enabled: true,
+                moisture: 69.1,
+            }],
+        };
+        let mut buf = Vec::new();
+        serde_json::to_writer(&mut buf, &sections).unwrap();
+
+        response.write_all(&buf)
     })?;
 
     // http://<sta ip>/temperature handler
