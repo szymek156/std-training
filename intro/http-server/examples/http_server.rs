@@ -40,7 +40,7 @@ fn main() -> Result<()> {
         app_config.wifi_psk,
         peripherals.modem,
         sysloop,
-    )?;
+    ).unwrap();
 
     // Initialize temperature sensor
     let sda = peripherals.pins.gpio10;
@@ -63,7 +63,7 @@ fn main() -> Result<()> {
         let html = index_html();
         let mut response = request.into_ok_response()?;
         response.write_all(html.as_bytes())?;
-        Ok(())
+        Ok::<(),_>(())
     })?;
 
     // http://<sta ip>/temperature handler

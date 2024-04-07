@@ -24,7 +24,6 @@ pub struct Config {
     #[default("")]
     wifi_psk: &'static str,
 }
-
 fn main() -> Result<()> {
     esp_idf_svc::sys::link_patches();
     esp_idf_svc::log::EspLogger::initialize_default();
@@ -41,31 +40,42 @@ fn main() -> Result<()> {
         app_config.wifi_psk,
         peripherals.modem,
         sysloop,
-    )?;
+    )
+    .unwrap();
 
-    // Initialize temperature sensor
-    let sda = peripherals.pins.gpio10;
-    let scl = peripherals.pins.gpio8;
-    let i2c = peripherals.i2c0;
-    let config = I2cConfig::new().baudrate(100.kHz().into());
-    let i2c = I2cDriver::new(i2c, sda, scl, &config)?;
-    let temp_sensor_main = Arc::new(Mutex::new(shtc3(i2c)));
-    let mut temp_sensor = temp_sensor_main.clone();
-    temp_sensor
-        .lock()
-        .unwrap()
-        .start_measurement(PowerMode::NormalMode)
-        .unwrap();
+    // // Initialize temperature sensor
+    // let sda = peripherals.pins.gpio10;
+    // let scl = peripherals.pins.gpio8;
+    // let i2c = peripherals.i2c0;
+    // let config = I2cConfig::new().baudrate(100.kHz().into());
+    // let i2c = I2cDriver::new(i2c, sda, scl, &config)?;
+    // let temp_sensor_main = Arc::new(Mutex::new(shtc3(i2c)));
+    // let temp_sensor = temp_sensor_main.clone();
+    // temp_sensor
+    //     .lock()
+    //     .unwrap()
+    //     .start_measurement(PowerMode::NormalMode)
+    //     .unwrap();
 
-    // 1.Create a `EspHttpServer` instance using a default configuration
-    // let mut server = EspHttpServer::new(...)?;
+    // Set the HTTP server
+    let mut server = EspHttpServer::new(&Configuration::default())?;
+    // http://<sta ip>/ handler
+    server.fn_handler("/", Method::Get, |request| {
+        let html = index_html();
+        let mut response = request.into_ok_response()?;
+        response.write_all(html.as_bytes())
 
-    // 2. Write a handler that returns the index page
-    // server.fn_handler("/", Method::Get, |request| {
-    // ...
-    //})?;
+    })?;
 
-    // This is not true until you actually create one
+    // http://<sta ip>/temperature handler
+    server.fn_handler("/temperature", Method::Get, move |request| {
+        let temp_val = 21.37;
+
+        let html = temperature(temp_val);
+        let mut response = request.into_ok_response()?;
+        response.write_all(html.as_bytes())
+    })?;
+
     println!("Server awaiting connection");
 
     // Prevent program from exiting
@@ -93,9 +103,9 @@ fn templated(content: impl AsRef<str>) -> String {
 }
 
 fn index_html() -> String {
-    templated("Hello from mcu!")
+    templated("Hello from ESP32-C3!")
 }
 
 fn temperature(val: f32) -> String {
-    templated(format!("chip temperature: {:.2}°C", val))
+    templated(format!("Chip temperature: {:.2}°C", val))
 }
