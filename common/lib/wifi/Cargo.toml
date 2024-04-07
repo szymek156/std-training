@@ -6,8 +6,9 @@ authors = ["Sergio Gasquez <sergio.gasquez@gmail.com>"]
 
 [dependencies]
 anyhow      = "=1.0.75"
-esp-idf-svc = "=0.47.3"
+esp-idf-svc = "=0.48.1"
 log         = "=0.4.20"
+heapless = "=0.8.0"
 
 [build-dependencies]
 embuild = "=0.31.4"

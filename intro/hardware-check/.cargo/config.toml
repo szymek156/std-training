@@ -1,20 +1,25 @@
 [build]
-target = "riscv32imc-esp-espidf"
+target = "xtensa-esp32-espidf"
 
-[target.riscv32imc-esp-espidf]
+[target.xtensa-esp32-espidf]
 linker = "ldproxy"
 runner = "espflash flash --monitor"
 # Future - necessary for the experimental "native build" of esp-idf-sys with ESP32C3
 # See also https://github.com/ivmarkov/embuild/issues/16
-rustflags = ["--cfg", "espidf_time64", "-C", "default-linker-libraries"]
+# rustflags = ["--cfg", "espidf_time64", "-C", "default-linker-libraries"]
+rustflags = [ "--cfg",  "espidf_time64"] # Extending time_t for ESP IDF 5: https://github.com/esp-rs/rust/issues/110
 
 [unstable]
 build-std = ["std", "panic_abort"]
 build-std-features = ["panic_immediate_abort"]
 
 [env]
+MCU="esp32"
+# Note: this variable is not used by the pio builder (`cargo build --features pio`)
+ESP_IDF_VERSION = "v5.1.3"
+
 # Enables the esp-idf-sys "native" build feature (`cargo build --features native`) to build against ESP-IDF (v5.1.2)
-ESP_IDF_VERSION = { value = "tag:v5.1.2" }
+# ESP_IDF_VERSION = { value = "tag:v5.1.2" }
 
 # These configurations will pick up your custom "sdkconfig.release", "sdkconfig.debug" or "sdkconfig.defaults[.*]" files
 # that you might put in the root of the project
